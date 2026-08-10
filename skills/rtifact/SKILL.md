@@ -85,6 +85,8 @@ branding or content.
 - Full Ant Design component catalog, theme stress-test, or verifying that all
   interactive components render correctly under a theme:
   [examples/AntD.jsx](examples/AntD.jsx)
+- Interactive simulation, physics/educational lab, Canvas visualizer, or multi-mode experiment:
+  [examples/MagneticForceSim.jsx](examples/MagneticForceSim.jsx)
 
 The copied examples are complete runnable references. Their shared
 [examples/favicon.svg](examples/favicon.svg) supports the metadata import.

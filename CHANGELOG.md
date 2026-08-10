@@ -4,6 +4,10 @@
 
 ## 1.0.3 - 2026-08-05
 
+- Add `MagneticForceSim.jsx` example demonstrating interactive 2D canvas simulations, magnetic force calculations, motor effect visualizers, and educational quiz patterns.
+
+## 1.0.3 - 2026-08-05
+
 - Add optional embedded CSS support (`css` property) to custom theme definitions, injected into `@layer components`.
 - Validate custom theme `css` property structure and report actionable diagnostics for malformed embedded CSS syntax during build.
 - Refine inline `code` and `kbd` element spacing, padding, and font size in `foundation.css`.
