@@ -58,6 +58,19 @@ Apply these in order:
    verify the JSX builds successfully; do not claim visual correctness from a
    source-only review.
 
+Direct single-file `.jsx` and `.tsx` builds include the exact original entry
+source in an inert `template#rtifact-source` before the compressed browser
+payload. Agents inspecting a received artifact should read that template rather
+than decode `rtifact-payload`; the generated file includes self-contained
+instructions and `xmllint` plus Python extraction examples. The source block is
+entry-only and excludes selected themes and imported local modules. It can expose
+comments, dead code, and unused strings, so never place secrets or private notes
+in source intended for a portable artifact. Directory builds and `pack` output do
+not contain this direct-entry source block. When source disclosure is not wanted,
+build the direct file with `--no-readable-source`; this omits both readable
+templates but does not remove compiled application code from the compressed
+payload.
+
 ## Example routing
 
 Reuse the selected example's composition, interaction, accessibility, and

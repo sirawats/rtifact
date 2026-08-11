@@ -15,6 +15,7 @@ Options:
   -o, --out-dir <path>      Build a directory instead of one HTML file
       --base <path>         Directory-mode public base path (default: ./)
       --self-contained      Embed runtime dependencies for offline use
+      --no-readable-source  Omit original JSX/TSX source from file output
       --theme <value>       Global theme preset or .ts/.jsx module (default: default)
       --themes               List available theme names
       --prism-themes         List available Prism theme names
@@ -37,6 +38,7 @@ interface BuildArguments {
   force: boolean;
   deprecatedSingleFile: boolean;
   selfContained: boolean;
+  includeReadableSource: boolean;
 }
 
 interface PackArguments {
@@ -102,6 +104,7 @@ export function parseArgs(argv: string[]): ParsedArguments {
     force: boolean;
     singleFile: boolean;
     selfContained: boolean;
+    includeReadableSource: boolean;
   } = {
     action,
     entry: undefined,
@@ -113,6 +116,7 @@ export function parseArgs(argv: string[]): ParsedArguments {
     force: false,
     singleFile: false,
     selfContained: false,
+    includeReadableSource: true,
   };
   const positionals: string[] = [];
   const seen = new Set<string>();
@@ -144,6 +148,11 @@ export function parseArgs(argv: string[]): ParsedArguments {
     if (parseOptions && arg === "--self-contained") {
       setOnce(seen, "--self-contained");
       options.selfContained = true;
+      continue;
+    }
+    if (parseOptions && arg === "--no-readable-source") {
+      setOnce(seen, "--no-readable-source");
+      options.includeReadableSource = false;
       continue;
     }
     if (parseOptions && arg === "--theme-inspect") {
@@ -248,6 +257,7 @@ export function parseArgs(argv: string[]): ParsedArguments {
       "--out-dir",
       "--base",
       "--theme",
+      "--no-readable-source",
     ].filter((name) => seen.has(name));
     if (rejected.length > 0) {
       throw invalid(`The pack command does not accept ${rejected.join(", ")}.`);
@@ -279,6 +289,11 @@ export function parseArgs(argv: string[]): ParsedArguments {
       "--self-contained cannot be combined with --out-dir or --base.",
     );
   }
+  if (!options.includeReadableSource && options.outDir) {
+    throw invalid(
+      "--no-readable-source cannot be combined with --out-dir because directory output does not include readable source.",
+    );
+  }
   return {
     action: "build",
     entry: positionals[0],
@@ -290,5 +305,6 @@ export function parseArgs(argv: string[]): ParsedArguments {
     force: options.force,
     deprecatedSingleFile: options.singleFile,
     selfContained: options.selfContained,
+    includeReadableSource: options.includeReadableSource,
   };
 }

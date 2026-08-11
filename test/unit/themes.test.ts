@@ -257,6 +257,10 @@ test("stored presets include typography, density, and original semantic values",
   assert.match(foundation, /summary:not\(\[class\]\)/);
   assert.match(
     foundation,
+    /img,\s*video,\s*canvas,\s*svg\s*\{[\s\S]*max-width: 100%;[\s\S]*height: auto;/,
+  );
+  assert.match(
+    foundation,
     /pre > code[\s\S]*background: transparent[\s\S]*color: inherit/,
   );
   assert.doesNotMatch(foundation, /--color-rtifact-|\.rtifact-/);

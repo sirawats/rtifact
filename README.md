@@ -191,6 +191,7 @@ Options:
   -o, --out-dir <path>      Build a directory instead of one HTML file
       --base <path>         Directory-mode public base path (default: ./)
       --self-contained      Embed runtime dependencies for offline use
+      --no-readable-source  Omit original JSX/TSX source from file output
       --theme <value>       Global theme preset or .ts/.jsx module (default: default)
       --themes               List available theme names
       --prism-themes         List available Prism theme names
@@ -245,6 +246,19 @@ to view all built-in presets (`default`, `github-light`, `github-dark`,
 - **Offline HTML (`--self-contained`)**: Embeds all runtime dependencies directly for zero-network execution.
 - **Static Directory (`--out-dir dist`)**: Generates a standard asset directory (`dist/`) with `index.html` and static assets. Supports `--base <path>` for deployment subpaths.
 - **Package Existing Build (`pack`)**: Run `rtifact pack dist --output index.html` to package an existing directory build into self-contained HTML.
+
+Direct `.jsx` and `.tsx` HTML builds also include the exact original entry
+source in an inert `template#rtifact-source` near the beginning of the file,
+before the compressed browser payload. This lets an AI agent understand the
+artifact without decoding the runtime representation. The source block contains
+only the direct entry file; selected themes and imported local modules are not
+copied into it. Pass `--no-readable-source` to omit both readable-source
+templates from a direct file; compiled application code remains in the
+compressed payload. Directory output and `pack` do not have this metadata.
+
+Because the source is intentionally readable, comments, dead code, and unused
+strings may be visible to anyone who receives the HTML. Do not put secrets or
+private notes in source intended for a portable artifact.
 
 <a id="examples"></a>
 
@@ -303,6 +317,26 @@ export default function Report() {
 
 The optional `RTIFACT` export sets the browser-tab title and favicon. The icon
 may be an imported local image or a remote or data URL.
+
+### Inspecting generated artifact source
+
+An unfamiliar AI agent can read `template#rtifact-source` directly. For a
+decoded copy on macOS or Linux, use `xmllint`:
+
+```sh
+xmllint --html --xpath 'string(//template[@id="rtifact-source"])' artifact.html 2>/dev/null
+```
+
+If `xmllint` is unavailable, this Python standard-library fallback preserves
+the original source text and line endings:
+
+```sh
+python3 -c 'import html,re,sys; text=open(sys.argv[1], encoding="utf-8", newline="").read(); match=re.search(r"<template\b[^>]*\bid=\"rtifact-source\"[^>]*>(.*?)</template>", text, re.S); sys.stdout.write(html.unescape(match.group(1)))' artifact.html
+```
+
+Do not spend time decoding or decompressing `rtifact-payload`; it is the
+browser runtime representation, not the preferred authoring source.
+Artifacts built with `--no-readable-source` intentionally omit these templates.
 
 The CLI supplies:
 

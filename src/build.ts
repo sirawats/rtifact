@@ -434,7 +434,10 @@ export async function withTemporaryApplicationBuild<T>(
     workspaceRoot,
     onWarning,
   }: TemporaryBuildOptions,
-  consume: (workspaceOutput: string) => T | Promise<T>,
+  consume: (
+    workspaceOutput: string,
+    source: { entry: string },
+  ) => T | Promise<T>,
 ): Promise<T> {
   let workspace: string | undefined;
 
@@ -493,7 +496,11 @@ export async function withTemporaryApplicationBuild<T>(
       },
     });
 
-    return await consume(workspaceOutput);
+    const entrySource = sourceSnapshot.files.get(path.normalize(entry));
+    if (entrySource === undefined) {
+      throw sourceLimitError(`does not include the validated entry: ${entry}`);
+    }
+    return await consume(workspaceOutput, { entry: entrySource });
   } catch (error) {
     const failure = asBuildError(error);
     await cleanupDirectory(workspace, failure);

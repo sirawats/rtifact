@@ -6,11 +6,28 @@ import { createCdnImportMap } from "../../src/dependencies.js";
 import { readEmbeddedPayload } from "../../src/single-file.js";
 import { invoke, makeFixture, writeFixture } from "../helpers.js";
 
+function readEmbeddedSource(html: string) {
+  const match = html.match(
+    /<template id="rtifact-source" data-path="([^"]*)">([\s\S]*?)<\/template>/,
+  );
+  assert.ok(match);
+  return {
+    path: match[1],
+    source: match[2].replace(/&amp;|&lt;/g, (entity) =>
+      entity === "&amp;" ? "&" : "<",
+    ),
+  };
+}
+
 test("builds a default and explicitly named single HTML file", async (t) => {
   const fixture = await makeFixture();
   t.after(() => rm(fixture, { recursive: true, force: true }));
+  const entrySource = `import { Button } from "antd";
+
+// Preserve <, &, </template>, <!-- -->, and CRLF-free source.
+export default () => <main className="p-8"><Button>Single artifact</Button></main>;`;
   await writeFixture(fixture, {
-    "pages/Home.jsx": `import { Button } from "antd";export default () => <main className="p-8"><Button>Single artifact</Button></main>;`,
+    "pages/Home.jsx": entrySource,
   });
 
   const defaultBuild = await invoke(["pages/Home.jsx"], {
@@ -26,6 +43,10 @@ test("builds a default and explicitly named single HTML file", async (t) => {
   assert.deepEqual(payload.importMap, createCdnImportMap());
   assert.match(payload.script, /from"react"/);
   assert.match(payload.script, /from"antd"/);
+  assert.deepEqual(readEmbeddedSource(defaultHtml), {
+    path: "pages/Home.jsx",
+    source: entrySource,
+  });
   assert.ok(!(await readdir(fixture)).includes("dist"));
 
   const explicitBuild = await invoke(
@@ -33,7 +54,14 @@ test("builds a default and explicitly named single HTML file", async (t) => {
     { cwd: fixture },
   );
   assert.equal(explicitBuild.exitCode, 0, explicitBuild.stderr);
-  assert.ok(await readFile(path.join(fixture, "public/index.html"), "utf8"));
+  const explicitHtml = await readFile(
+    path.join(fixture, "public/index.html"),
+    "utf8",
+  );
+  assert.deepEqual(readEmbeddedSource(explicitHtml), {
+    path: "pages/Home.jsx",
+    source: entrySource,
+  });
 
   const selfContained = await invoke(
     ["pages/Home.jsx", "--self-contained", "--output", "offline.html"],
@@ -43,8 +71,35 @@ test("builds a default and explicitly named single HTML file", async (t) => {
   const offlinePayload = readEmbeddedPayload(
     await readFile(path.join(fixture, "offline.html"), "utf8"),
   );
+  assert.deepEqual(
+    readEmbeddedSource(
+      await readFile(path.join(fixture, "offline.html"), "utf8"),
+    ),
+    { path: "pages/Home.jsx", source: entrySource },
+  );
   assert.equal(offlinePayload.importMap, undefined);
   assert.doesNotMatch(offlinePayload.script, /from"react"/);
+
+  for (const [filename, extraArgs] of [
+    ["private.html", []],
+    ["private-offline.html", ["--self-contained"]],
+  ] as const) {
+    const privateBuild = await invoke(
+      [
+        "pages/Home.jsx",
+        "--no-readable-source",
+        ...extraArgs,
+        "--output",
+        filename,
+      ],
+      { cwd: fixture },
+    );
+    assert.equal(privateBuild.exitCode, 0, privateBuild.stderr);
+    const privateHtml = await readFile(path.join(fixture, filename), "utf8");
+    assert.doesNotMatch(privateHtml, /rtifact-agent-instructions/);
+    assert.doesNotMatch(privateHtml, /rtifact-source/);
+    assert.match(readEmbeddedPayload(privateHtml).script, /Single artifact/);
+  }
 });
 
 test("packs an existing build without changing its input", async (t) => {
@@ -57,6 +112,11 @@ test("packs an existing build without changing its input", async (t) => {
     cwd: fixture,
   });
   assert.equal(build.exitCode, 0, build.stderr);
+  const directoryHtml = await readFile(
+    path.join(fixture, "dist/index.html"),
+    "utf8",
+  );
+  assert.doesNotMatch(directoryHtml, /rtifact-source/);
 
   const beforeEntries = await readdir(path.join(fixture, "dist"), {
     recursive: true,
@@ -82,6 +142,11 @@ test("packs an existing build without changing its input", async (t) => {
   assert.equal(
     await readFile(path.join(fixture, "dist/index.html"), "utf8"),
     beforeHtml,
+  );
+  assert.doesNotMatch(beforeHtml, /rtifact-source/);
+  assert.doesNotMatch(
+    await readFile(path.join(fixture, "index.html"), "utf8"),
+    /rtifact-source/,
   );
 });
 

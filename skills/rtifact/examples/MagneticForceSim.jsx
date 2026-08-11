@@ -735,12 +735,21 @@ export default function MagneticForceSim() {
                     ref={canvasRef}
                     width={700}
                     height={440}
+                    role="img"
+                    aria-label="Animated path of a charged particle in a magnetic field"
+                    aria-describedby="lorentz-diagnostics"
                     className="block w-full h-[440px] bg-slate-900 cursor-crosshair"
-                  />
+                  >
+                    The particle path, velocity vector, and magnetic-force
+                    vector are summarized by the diagnostics below.
+                  </canvas>
                 </div>
 
                 {/* Grade 10 Formula Calculated Stats */}
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-card p-4 rounded-lg border border-border">
+                <div
+                  id="lorentz-diagnostics"
+                  className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-4 bg-card p-4 rounded-lg border border-border"
+                >
                   <Statistic
                     title="Magnetic Force (F)"
                     value={forceLorentz.toExponential(2)}

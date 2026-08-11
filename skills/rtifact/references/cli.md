@@ -34,6 +34,30 @@ restores it, including through `file://`; no neighboring local assets or server
 are required. React and Ant Design runtime modules load from exact-version
 esm.sh URLs, so the default requires network access.
 
+Direct file output also embeds the exact original entry source in an inert
+`template#rtifact-source` before the payload. This is the preferred representation
+for an AI agent inspecting or revising a received artifact; do not decode
+`rtifact-payload`. The source block is intentionally readable and may expose
+comments, dead code, or unused strings, so never put secrets in shareable source.
+Use `--no-readable-source` to omit both readable templates when source disclosure
+is not wanted. The compiled application remains in the compressed payload.
+
+Extract it with `xmllint` when available:
+
+```sh
+xmllint --html --xpath 'string(//template[@id="rtifact-source"])' artifact.html 2>/dev/null
+```
+
+For a byte-exact fallback that preserves line endings, use Python’s standard
+library:
+
+```sh
+python3 -c 'import html,re,sys; text=open(sys.argv[1], encoding="utf-8", newline="").read(); match=re.search(r"<template\b[^>]*\bid=\"rtifact-source\"[^>]*>(.*?)</template>", text, re.S); sys.stdout.write(html.unescape(match.group(1)))' artifact.html
+```
+
+This metadata is present for default and `--self-contained` direct builds only;
+directory output and `pack` do not have an original direct entry to expose.
+
 Choose this mode for the smallest shareable reports, guides, demos,
 comparisons, and small tools.
 
@@ -111,6 +135,8 @@ privileged post-theme CSS slot.
 - `--base` requires `--out-dir`.
 - `--self-contained` embeds runtime dependencies and conflicts with directory
   mode; `pack` is already self-contained.
+- `--no-readable-source` omits direct-file authoring metadata and conflicts with
+  directory mode; `pack` already has no readable direct-entry source.
 - `--single-file` is a deprecated alias for the default mode.
 - `--force` replaces an existing protected output; use it only after confirming
   the exact target may be replaced.
