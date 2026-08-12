@@ -2,7 +2,7 @@
 
 ## Artifact source contract
 
-- Create a readable `.jsx` or `.tsx` module with one default-exported React component.
+- Create a readable `.jsx` module with one default-exported React component.
 - Use relative imports for local modules and assets.
 - Assume Rtifact supplies React, React DOM, Ant Design, Tailwind CSS, React
   Icons, and PrismJS. Other bare imports must exist in the input project's
@@ -96,8 +96,7 @@ export default function CodeSample() {
 
 The language module must be imported before reading `Prism.languages[lang]`.
 For a dynamic language selector, import every offered grammar and handle a
-missing grammar before calling `Prism.highlight()`. Insert only HTML returned by
-Prism into `dangerouslySetInnerHTML`; do not append unescaped HTML.
+missing grammar before calling `Prism.highlight()`.
 
 For line numbers, import PrismJS's plugin and stylesheet, put `line-numbers` on
 the `<pre>`, and use `Prism.highlightElement()` so the plugin hook runs. Rtifact
@@ -125,8 +124,10 @@ function NumberedCode({ source }) {
 ## Theme usage
 
 Let native elements inherit the theme and let Ant Design style its own
-components. Prefer these semantic Tailwind utilities when explicit styling is
-needed:
+components. The following utilities are common examples, not a required styling
+recipe or a complete list. Prefer theme-backed semantic Tailwind utilities when
+explicit styling is needed. Other Tailwind CSS v4 utilities are also available;
+write their complete class names statically in the source:
 
 - Surfaces: `bg-background`, `bg-card`, `bg-popover`, `bg-code`
 - Text: `text-foreground`, `text-muted-foreground`, `text-primary`
@@ -159,8 +160,10 @@ card. Use tables for exact comparisons, not general page layout.
 
 ## Interaction
 
-- Add interaction only when it helps readers filter, compare, inspect, copy,
-  calculate, validate, or complete a task.
+- Interaction is optional. Add it when it improves the experience for human
+  readers, such as navigation and links, filtering, comparison, inspection,
+  expand/collapse controls, copying, editing, calculation, validation, task
+  completion, or progress tracking.
 - Show defaults and initial content; do not open to an empty dashboard.
 - Cover loading, empty, error, disabled, and success states when the workflow can
   actually reach them.
@@ -178,10 +181,6 @@ card. Use tables for exact comparisons, not general page layout.
 - Put the user's real content and conclusions ahead of decorative chrome.
 - Use data arrays plus mapping for repeated facts, options, rows, or sections.
 - Keep small one-off layouts inline instead of creating abstraction layers.
-- Avoid invented metrics, testimonials, links, or actions that imply unavailable
-  behavior.
-- When required source data is missing, ask for it or label placeholder data
-  clearly; never present invented details as real results.
 - Use remote media when it materially improves the artifact. Preserve essential
   meaning in nearby text or `alt`; do not generate dozens of speculative
   fallbacks.
@@ -202,11 +201,31 @@ export default function Report() {
 }
 ```
 
-- Inline data the user supplies. Do not invent or estimate values; ask for the
-  data or mark placeholders clearly and visibly.
+- Inline data the user supplies.
 - Parse CSV or JSON once at module level, not inside render functions.
 - For large datasets (roughly > 500 rows), note the size impact and confirm
   before embedding — the artifact file grows proportionally.
-- Use remote `fetch` for live data, public APIs, or data too large to inline.
-  When fetch is part of the workflow, cover loading, error, and empty states.
-- Never embed credentials, tokens, PII, or secrets in a portable artifact.
+
+## Guardrails
+
+- Ask for the user's explicit confirmation before embedding credentials, tokens,
+  PII, or secrets.
+- Ask for the user's explicit confirmation before adding application-level API
+  requests, `fetch` calls, external data loading, or connections to other
+  services. Explain what service the artifact contacts and what data it sends or
+  receives. This does not include Rtifact-managed runtimes selected by the
+  output mode.
+- After confirmation, clearly warn the user in the handoff and suggest how to
+  use and share the artifact safely. Tailor this notice to the actual risk:
+
+  > **WARNING:** This artifact contains [sensitive data] or connects to [external
+  > service and data exchanged]. Anyone with access to the file may be able to
+  > inspect embedded data and source. Use and share it only with [intended
+  > audience], and remove or revoke sensitive access when it is no longer needed.
+
+- When an external request is approved, cover its loading, error, and empty
+  states.
+- Do not invent or estimate facts, metrics, testimonials, links, or available
+  actions. Ask for required source data or label placeholders clearly.
+- Insert only HTML returned by Prism into `dangerouslySetInnerHTML`; never append
+  unescaped or untrusted HTML.
