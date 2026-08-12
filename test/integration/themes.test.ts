@@ -177,6 +177,10 @@ export default {
   const filePayload = readEmbeddedPayload(
     await readFile(path.join(app, "Company.html"), "utf8"),
   );
+  const fileHtml = await readFile(path.join(app, "Company.html"), "utf8");
+  assert.match(fileHtml, /id="rtifact-source" data-path="Plain\.jsx"/);
+  assert.match(fileHtml, /Plain company theme/);
+  assert.doesNotMatch(fileHtml, /Company JSX|Company panel/);
   assert.match(filePayload.styles.join("\n"), /--primary:#0057b8/);
   assert.match(filePayload.script, /Plain company theme/);
 
@@ -326,6 +330,26 @@ test("lists themes discovered from PrismJS and Prism Themes", async () => {
   const optionListing = await invoke(["--prism-themes"]);
   assert.equal(optionListing.exitCode, 0, optionListing.stderr);
   assert.equal(optionListing.stdout, listing.stdout);
+});
+
+test("warns and uses the package Prism default for an unknown custom theme default", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  await writeFixture(fixture, {
+    "App.jsx": `export default () => <pre>Custom theme fallback</pre>;`,
+    "theme.jsx": defaultDefinition
+      .replace('id: "default"', 'id: "missing-prism-default"')
+      .replace('prismTheme: "prism"', 'prismTheme: "missing"'),
+  });
+
+  const result = await invoke(
+    ["App.jsx", "--theme", "./theme.jsx", "--out-dir", "dist"],
+    { cwd: fixture },
+  );
+  assert.equal(result.exitCode, 0, result.stderr);
+  assert.match(result.stderr, /Unknown default Prism theme "missing"/);
+  assert.match(result.stderr, /using "prism"/);
+  assert.match(await readAsset(path.join(fixture, "dist"), ".js"), /#f5f2f0/);
 });
 
 test("builds single-file and directory outputs with custom theme embedded CSS", async (t) => {

@@ -24,6 +24,49 @@ import {
 import { createSingleFileHtml } from "../../src/templates.js";
 import { makeFixture, writeFixture } from "../helpers.js";
 
+function decodeHtmlText(value: string) {
+  return value.replace(/&amp;|&lt;/g, (entity) =>
+    entity === "&amp;" ? "&" : "<",
+  );
+}
+
+test("renders agent-readable source before the compressed payload", () => {
+  const source =
+    'const marker = "&lt;";\r\nexport default () => <main>{"</template>"}<!-- -->count--</main>;';
+  const sourcePath = "pages/&<Home.jsx";
+  const html = createSingleFileHtml(
+    "encoded-payload",
+    SINGLE_FILE_PAYLOAD_VERSION,
+    {
+      path: sourcePath,
+      source,
+    },
+  );
+  const instructionsIndex = html.indexOf('id="rtifact-agent-instructions"');
+  const sourceIndex = html.indexOf('id="rtifact-source"');
+  const statusIndex = html.indexOf('id="rtifact-status"');
+  const payloadIndex = html.indexOf('id="rtifact-payload"');
+  assert.ok(
+    instructionsIndex >= 0 &&
+      sourceIndex > instructionsIndex &&
+      statusIndex > sourceIndex &&
+      payloadIndex > statusIndex,
+  );
+  const sourceMatch = html.match(
+    /<template id="rtifact-source" data-path="([^"]*)">([\s\S]*?)<\/template>/,
+  );
+  assert.ok(sourceMatch);
+  assert.equal(decodeHtmlText(sourceMatch[1]), sourcePath);
+  assert.equal(decodeHtmlText(sourceMatch[2]), source);
+  assert.doesNotMatch(sourceMatch[2], /<main>|<\/template>/);
+  assert.match(html, /generated from JSX by Rtifact/);
+  assert.match(html, /github\.com\/sirawats\/rtifact/);
+  assert.match(html, /Ignore compressed text/);
+  assert.match(html, /xmllint --html --xpath/);
+  assert.match(html, /python3 -c/);
+  assert.match(html, /newline=""/);
+});
+
 test("normalizes assets and round-trips a compressed HTML artifact", async (t) => {
   const fixture = await makeFixture();
   t.after(() => rm(fixture, { recursive: true, force: true }));
@@ -47,6 +90,14 @@ test("normalizes assets and round-trips a compressed HTML artifact", async (t) =
   assert.match(artifact.html, /DecompressionStream\("gzip"\)/);
   assert.match(artifact.html, /start\(\)\.catch\(showError\)/);
   assert.deepEqual(readEmbeddedPayload(artifact.html), payload);
+
+  const readable = await createSingleFileArtifact(fixture, {
+    path: "index.html",
+    source: "export default () => <main>Readable</main>;",
+  });
+  assert.ok(readable.bytes > artifact.bytes);
+  assert.equal(readable.compressedBytes, artifact.compressedBytes);
+  assert.deepEqual(readEmbeddedPayload(readable.html), payload);
 });
 
 test("keeps payload source unable to terminate the outer script", async (t) => {

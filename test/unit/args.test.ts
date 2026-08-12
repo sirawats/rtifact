@@ -22,6 +22,7 @@ test("defaults JSX builds to a named HTML file", () => {
     force: false,
     deprecatedSingleFile: false,
     selfContained: false,
+    includeReadableSource: true,
   });
   assert.deepEqual(
     parseArgs([
@@ -41,6 +42,7 @@ test("defaults JSX builds to a named HTML file", () => {
       force: false,
       deprecatedSingleFile: false,
       selfContained: false,
+      includeReadableSource: true,
     },
   );
 });
@@ -65,6 +67,7 @@ test("selects directory mode only from an explicit output directory", () => {
       force: true,
       deprecatedSingleFile: false,
       selfContained: false,
+      includeReadableSource: true,
     },
   );
 });
@@ -79,6 +82,11 @@ test("parses deprecated single-file, theme discovery, and pack commands", () => 
   }
   assert.equal(singleFile.deprecatedSingleFile, true);
   assert.equal(selfContained.selfContained, true);
+  const privateBuild = parseArgs(["Home.jsx", "--no-readable-source"]);
+  assert.equal(privateBuild.action, "build");
+  if (privateBuild.action === "build") {
+    assert.equal(privateBuild.includeReadableSource, false);
+  }
   assert.deepEqual(parseArgs(["themes"]), { action: "themes" });
   assert.deepEqual(parseArgs(["--themes"]), { action: "themes" });
   assert.deepEqual(parseArgs(["prism-themes"]), { action: "prism-themes" });
@@ -135,6 +143,10 @@ test("rejects invalid modes, duplicate values, and action-specific options", () 
     /cannot be combined/,
   );
   assert.throws(
+    () => parseArgs(["A.jsx", "--no-readable-source", "--out-dir", "site"]),
+    /does not include readable source/,
+  );
+  assert.throws(
     () => parseArgs(["A.jsx", "--theme", "github", "--theme", "material"]),
     /only be specified once/,
   );
@@ -162,8 +174,14 @@ test("rejects invalid modes, duplicate values, and action-specific options", () 
     () => parseArgs(["pack", "dist", "--output", "x.html", "--self-contained"]),
     /does not accept --self-contained/,
   );
+  assert.throws(
+    () =>
+      parseArgs(["pack", "dist", "--output", "x.html", "--no-readable-source"]),
+    /does not accept --no-readable-source/,
+  );
   assert.match(USAGE, /CDN-backed compressed HTML file by default/);
   assert.match(USAGE, /--self-contained/);
+  assert.match(USAGE, /--no-readable-source/);
   assert.match(USAGE, /rtifact themes/);
   assert.match(USAGE, /--themes/);
   assert.match(USAGE, /rtifact prism-themes/);

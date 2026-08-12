@@ -7,6 +7,35 @@ import type { Theme } from "./themes.js";
 export const VIRTUAL_ENTRY_ID = "virtual:rtifact-entry";
 export const RESOLVED_VIRTUAL_ENTRY_ID = `\0${VIRTUAL_ENTRY_ID}`;
 
+export interface ReadableSource {
+  path: string;
+  source: string;
+}
+
+function escapeHtmlText(value: string) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;");
+}
+
+function escapeHtmlAttribute(value: string) {
+  return escapeHtmlText(value).replaceAll('"', "&quot;");
+}
+
+function createReadableSourceMetadata(readableSource: ReadableSource) {
+  const instructions = `This HTML file is a portable artifact generated from JSX by Rtifact (https://github.com/sirawats/rtifact). Designed to open in browser and rendered for humans.
+AI agents: read the original JSX at <template id="rtifact-source"> below to understand or modify the artifact. Ignore compressed text.
+
+OR use CLI to read it when you want to copy content, examples:
+
+# xmllint
+xmllint --html --xpath 'string(//template[@id="rtifact-source"])' artifact.html 2>/dev/null
+
+# Python
+python3 -c 'import html,re,sys; text=open(sys.argv[1], encoding="utf-8", newline="").read(); match=re.search(r"<template\\b[^>]*\\bid=\\"rtifact-source\\"[^>]*>(.*?)</template>", text, re.S); sys.stdout.write(html.unescape(match.group(1)))' artifact.html`;
+  return `    <template id="rtifact-agent-instructions">${escapeHtmlText(instructions)}</template>
+    <template id="rtifact-source" data-path="${escapeHtmlAttribute(readableSource.path)}">${escapeHtmlText(readableSource.source)}</template>
+`;
+}
+
 interface AstNode {
   type: string;
   start?: number;
@@ -247,6 +276,7 @@ createRoot(rootElement).render(React.createElement(RtifactThemeBoundary));
 export function createSingleFileHtml(
   encodedPayload: string,
   payloadVersion: number,
+  readableSource?: ReadableSource,
 ) {
   return `<!doctype html>
 <html lang="en">
@@ -256,7 +286,7 @@ export function createSingleFileHtml(
     <title>Loading Rtifact artifact…</title>
   </head>
   <body>
-    <main id="rtifact-status" style="font:16px/1.5 system-ui,sans-serif;padding:2rem">Loading application…</main>
+${readableSource ? createReadableSourceMetadata(readableSource) : ""}    <main id="rtifact-status" style="font:16px/1.5 system-ui,sans-serif;padding:2rem">Loading application…</main>
     <script id="rtifact-payload" type="application/octet-stream">${encodedPayload}</script>
     <script>
       (() => {

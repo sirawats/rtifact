@@ -177,6 +177,7 @@ export async function runCli(
             entry,
             base: "./",
             cdn: !options.selfContained,
+            includeReadableSource: options.includeReadableSource,
             theme: themeInput,
           },
           workerOverrides,

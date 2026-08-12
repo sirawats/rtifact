@@ -11,7 +11,7 @@ import {
   StableFileError,
   type StableFileIdentity,
 } from "./stable-files.js";
-import { createSingleFileHtml } from "./templates.js";
+import { createSingleFileHtml, type ReadableSource } from "./templates.js";
 
 const MIME_TYPES = new Map([
   [".avif", "image/avif"],
@@ -1175,7 +1175,10 @@ function estimatedJsonBytes(value: unknown): number {
   throw packageError("Portable payload contains a non-JSON value.");
 }
 
-export async function createSingleFileArtifact(inputDirectory: string) {
+export async function createSingleFileArtifact(
+  inputDirectory: string,
+  readableSource?: ReadableSource,
+) {
   const payload = await normalizeBuildDirectory(inputDirectory);
   if (estimatedJsonBytes(payload) > PACK_INPUT_LIMITS.normalizedBytes) {
     throw packageError("Normalized portable payload exceeds 96 MiB.");
@@ -1189,6 +1192,7 @@ export async function createSingleFileArtifact(inputDirectory: string) {
   const html = createSingleFileHtml(
     compressed.toString("base64"),
     SINGLE_FILE_PAYLOAD_VERSION,
+    readableSource,
   );
   const bytes = Buffer.byteLength(html);
   if (bytes > PACK_INPUT_LIMITS.artifactBytes) {

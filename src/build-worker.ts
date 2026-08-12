@@ -21,6 +21,7 @@ export type BuildJob =
       entry: string;
       base: string;
       cdn: boolean;
+      includeReadableSource: boolean;
       theme: ThemeInput;
     }
   | {

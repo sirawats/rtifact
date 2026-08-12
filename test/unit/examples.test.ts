@@ -79,3 +79,13 @@ test("website preview replaces the shell Prism theme with the selected preset", 
   );
   assert.match(source, /PRISM_THEME_STYLES\[activeTheme\.prismTheme\]/);
 });
+
+test("magnetic force canvas exposes an accessible description", async () => {
+  const source = await readFile(
+    path.join(examplesDirectory, "MagneticForceSim.jsx"),
+    "utf8",
+  );
+  assert.match(source, /<canvas[\s\S]*role="img"/);
+  assert.match(source, /aria-describedby="lorentz-diagnostics"/);
+  assert.match(source, /id="lorentz-diagnostics"/);
+});

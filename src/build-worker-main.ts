@@ -90,6 +90,10 @@ async function prepare(job: WorkerRequest) {
 
   const selection = await loadThemeInput(job.theme, job.workspace);
   if (job.kind === "file") {
+    const sourcePath = path
+      .relative(job.cwd, job.entry)
+      .split(path.sep)
+      .join("/");
     const artifact = await withTemporaryApplicationBuild(
       {
         entry: job.entry,
@@ -101,7 +105,13 @@ async function prepare(job: WorkerRequest) {
         workspaceRoot: job.workspace,
         onWarning,
       },
-      createSingleFileArtifact,
+      (workspaceOutput, source) =>
+        createSingleFileArtifact(
+          workspaceOutput,
+          job.includeReadableSource
+            ? { path: sourcePath, source: source.entry }
+            : undefined,
+        ),
     );
     const relativePath = "prepared/artifact.html";
     await writeFile(

@@ -61,7 +61,7 @@ The CLI SHALL define one exact-version CDN mapping for the supported external ru
 
 The CLI SHALL make the package's supported `react-icons` collection imports, `prismjs` runtime, language-module and plugin imports, and discovered PrismJS and `prism-themes` stylesheets available to JSX entries without requiring those packages to be installed beside the input file.
 
-Each selected Rtifact theme SHALL name one available default Prism stylesheet appropriate to its visual appearance. An explicit `RTIFACT.prismTheme` value SHALL override that default for the current entry.
+Each built-in Rtifact theme SHALL name one available default Prism stylesheet appropriate to its visual appearance. A selected custom theme SHOULD name an available default; if it does not, the CLI SHALL warn and use the package's default Prism stylesheet. An explicit `RTIFACT.prismTheme` value SHALL override the selected theme's default for the current entry.
 
 #### Scenario: Entry imports a React Icons collection
 
@@ -82,6 +82,11 @@ Each selected Rtifact theme SHALL name one available default Prism stylesheet ap
 
 - **WHEN** an entry does not declare `RTIFACT.prismTheme`
 - **THEN** the build includes only the selected Rtifact theme's default Prism stylesheet
+
+#### Scenario: Custom theme names an unknown Prism default
+
+- **WHEN** a selected custom theme names a Prism stylesheet that is not installed
+- **THEN** the build includes the package's default Prism stylesheet and reports the fallback as a warning
 
 #### Scenario: Entry selects an unknown Prism theme
 

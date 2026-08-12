@@ -1,6 +1,11 @@
 # Custom Rtifact theme modules
 
-Read this reference whenever an artifact consumes a local `.ts` or `.jsx` theme module. For authoring or repairing the theme itself, use the `rtifact-create-theme` skill; it contains the complete definition, contrast matrix, and failure guide.
+Read this reference whenever an artifact consumes a local `.jsx` theme module.
+Before authoring or revising the artifact, always read the selected theme module
+in full to understand its visual direction and identify named React components
+you can reuse. Prefer suitable theme exports over recreating the same branded
+UI. For authoring or repairing the theme itself, use the `rtifact-create-theme`
+skill; it contains the complete definition, contrast matrix, and failure guide.
 
 ## Two independent exports
 
@@ -17,7 +22,7 @@ import { BrandPage, BrandHero } from "./brand-theme.jsx";
 
 ## Path resolution
 
-The theme file does not need to share a directory with the artifact; it may be any readable `.ts` or `.jsx` file. The CLI resolves relative `--theme` paths from the command's current working directory:
+The theme file does not need to share a directory with the artifact; it may be any readable `.jsx` file. The CLI resolves relative `--theme` paths from the command's current working directory:
 
 ```sh
 rtifact src/Report.jsx --theme ./themes/brand-theme.jsx

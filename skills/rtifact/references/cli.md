@@ -2,30 +2,24 @@
 
 ## Invocation
 
-Check whether `rtifact` is available on `PATH` first. This finds a global
-installation when present; otherwise run the package through `npx`:
+Use the latest published CLI through `npx` by default:
 
 ```sh
-if command -v rtifact > /dev/null 2>&1; then
-  rtifact Report.jsx
-else
-  npx rtifact Report.jsx
-fi
+npx rtifact@latest Report.jsx
 ```
 
-Apply the same choice to the commands below: use `rtifact ...` when the check
-succeeds and `npx rtifact ...` when it does not. Entries may be `.jsx` or
-`.tsx`; both are supported identically.
+Use an installed `rtifact` executable only when the user explicitly asks for
+it. Entries may be `.jsx` or `.tsx`; both are supported identically.
 
 ## Output modes
 
 ### Compact CDN-backed HTML: default
 
 ```sh
-rtifact Report.jsx
+npx rtifact@latest Report.jsx
 # ./Report.html
 
-rtifact Report.jsx --output deliverables/index.html
+npx rtifact@latest Report.jsx --output deliverables/index.html
 ```
 
 The finished artifact is one HTML file containing a base64-encoded gzip application
@@ -34,14 +28,38 @@ restores it, including through `file://`; no neighboring local assets or server
 are required. React and Ant Design runtime modules load from exact-version
 esm.sh URLs, so the default requires network access.
 
+Direct file output also embeds the exact original entry source in an inert
+`template#rtifact-source` before the payload. This is the preferred representation
+for an AI agent inspecting or revising a received artifact; do not decode
+`rtifact-payload`. The source block is intentionally readable and may expose
+comments, dead code, or unused strings, so never put secrets in shareable source.
+Use `--no-readable-source` to omit both readable templates when source disclosure
+is not wanted. The compiled application remains in the compressed payload.
+
+Extract it with `xmllint` when available:
+
+```sh
+xmllint --html --xpath 'string(//template[@id="rtifact-source"])' artifact.html 2>/dev/null
+```
+
+For a byte-exact fallback that preserves line endings, use Python’s standard
+library:
+
+```sh
+python3 -c 'import html,re,sys; text=open(sys.argv[1], encoding="utf-8", newline="").read(); match=re.search(r"<template\b[^>]*\bid=\"rtifact-source\"[^>]*>(.*?)</template>", text, re.S); sys.stdout.write(html.unescape(match.group(1)))' artifact.html
+```
+
+This metadata is present for default and `--self-contained` direct builds only;
+directory output and `pack` do not have an original direct entry to expose.
+
 Choose this mode for the smallest shareable reports, guides, demos,
 comparisons, and small tools.
 
 ### Self-contained HTML
 
 ```sh
-rtifact Report.jsx --self-contained
-rtifact Report.jsx --self-contained --output deliverables/index.html
+npx rtifact@latest Report.jsx --self-contained
+npx rtifact@latest Report.jsx --self-contained --output deliverables/index.html
 ```
 
 Choose this mode when the artifact must start offline. It embeds the supplied
@@ -50,8 +68,8 @@ runtime and is therefore substantially larger.
 ### Deployable directory
 
 ```sh
-rtifact Report.jsx --out-dir dist
-rtifact Report.jsx --out-dir public/app --base /application/
+npx rtifact@latest Report.jsx --out-dir dist
+npx rtifact@latest Report.jsx --out-dir public/app --base /application/
 ```
 
 Choose directory mode for conventional static hosting, strict Content Security
@@ -60,7 +78,7 @@ Policy, or application graphs the single-file packer cannot normalize.
 ### Pack an existing build
 
 ```sh
-rtifact pack dist --output Report.html
+npx rtifact@latest pack dist --output Report.html
 ```
 
 Packing reads a compatible directory build without modifying it and produces a
@@ -69,21 +87,22 @@ self-contained artifact.
 ## Themes and theme modules
 
 ```sh
-rtifact themes
-rtifact prism-themes
-rtifact theme-inspect rtifact
-rtifact --theme-inspect ./company-theme.jsx
-rtifact Report.jsx --theme material
-rtifact Report.jsx --theme material-dark
-rtifact Report.jsx --theme ./company-theme.jsx
+npx rtifact@latest themes
+npx rtifact@latest prism-themes
+npx rtifact@latest theme-inspect rtifact
+npx rtifact@latest --theme-inspect ./company-theme.jsx
+npx rtifact@latest Report.jsx --theme material
+npx rtifact@latest Report.jsx --theme material-dark
+npx rtifact@latest Report.jsx --theme ./company-theme.jsx
 ```
 
 Unsuffixed family aliases resolve to fixed light presets; dark mode is selected
 only by naming a dark preset. `prism-themes` lists syntax themes discovered from
 the installed PrismJS and Prism Themes packages. Every selected Rtifact theme
 supplies a matching Prism default; `RTIFACT.prismTheme` remains an explicit
-per-entry override. Run `rtifact theme-inspect <name>` or `rtifact --theme-inspect <name>`
-to print the `.jsx` source code of any preset theme or custom theme module for inspection.
+per-entry override. Run `npx rtifact@latest theme-inspect <name>` or
+`npx rtifact@latest --theme-inspect <name>` to print the `.jsx` source code of
+any preset theme or custom theme module for inspection.
 
 `--theme` also accepts a readable local `.ts` or `.jsx` module resolved from the
 invocation directory. Its default export is the complete declarative theme
@@ -93,7 +112,8 @@ import is needed. Applications import named exports, including reusable
 components, normally; Rtifact does not inject them. Theme modules are trusted
 local code compiled and executed before output is created. Malformed embedded
 CSS fails the build before publication. Theme modules apply to JSX builds, not
-discovery or `pack` commands, and do not appear in `rtifact themes`.
+discovery or `pack` commands, and do not appear in
+`npx rtifact@latest themes`.
 
 Import application-specific CSS from the JSX or TSX entry:
 
@@ -111,6 +131,8 @@ privileged post-theme CSS slot.
 - `--base` requires `--out-dir`.
 - `--self-contained` embeds runtime dependencies and conflicts with directory
   mode; `pack` is already self-contained.
+- `--no-readable-source` omits direct-file authoring metadata and conflicts with
+  directory mode; `pack` already has no readable direct-entry source.
 - `--single-file` is a deprecated alias for the default mode.
 - `--force` replaces an existing protected output; use it only after confirming
   the exact target may be replaced.
@@ -135,16 +157,10 @@ embed secrets.
 
 ## Verification
 
-Run the smallest build matching the requested deliverable. Treat a successful
-build as the minimum check, then inspect the artifact in a supported browser
-when visual fidelity or interaction matters.
-
-The compact default loads exact-version runtimes from esm.sh. If it renders
-blank in an offline or network-restricted browser, check runtime requests before
-blaming the application. Use a temporary `--self-contained` build for offline
-inspection, but keep the user's requested output mode for the deliverable. If no
-browser tooling is available, verify the build and interaction paths from source,
-state the limitation, and do not claim visual correctness.
+Run the smallest build matching the requested deliverable. A successful CLI
+build completes the task. Return the output and ask the user to open the
+generated HTML in their browser; do not open, render, or inspect it yourself,
+and do not create a screenshot or snapshot.
 
 ## When a build fails
 

@@ -334,6 +334,7 @@ export default { ...ambient, id: "ambient-root", name: "Ambient Root" };`,
       entry: path.join(fixture, "App.jsx"),
       base: "./",
       cdn: true,
+      includeReadableSource: true,
       theme: { kind: "module", source: path.join(fixture, "theme.jsx") },
     });
     await cleanupPreparedOutput(prepared);

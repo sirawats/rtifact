@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## 1.0.4 - 2026-08-12
+
+- Embed the exact original direct `.jsx` or `.tsx` entry source in readable,
+  inert HTML metadata so AI agents can inspect artifacts without decompressing
+  the browser payload. Include `xmllint` and Python extraction guidance, support
+  `--no-readable-source` when that metadata should be omitted, and leave
+  directory and `pack` output unchanged.
+- Add `MagneticForceSim.jsx` example demonstrating interactive 2D canvas simulations, magnetic force calculations, motor effect visualizers, and educational quiz patterns.
+- Keep unclassed embedded media within its container and expose the magnetic-force canvas through an accessible description and diagnostics.
+- Upgrade skills
+
 ## 1.0.3 - 2026-08-05
 
 - Add optional embedded CSS support (`css` property) to custom theme definitions, injected into `@layer components`.
