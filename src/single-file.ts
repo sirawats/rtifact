@@ -52,7 +52,10 @@ export interface PackInventory {
   physicalBytes: number;
 }
 type ImportMap = ReturnType<typeof createCdnImportMap>;
-type AsyncReplacer = (match: RegExpMatchArray) => Promise<string>;
+interface TextSpan {
+  start: number;
+  end: number;
+}
 type AssetEncoder = (file: PackFile) => Promise<string>;
 type AstNode = { type: string; [key: string]: unknown };
 interface FileIndexState {
@@ -198,15 +201,13 @@ function resolveFileReference(
   reference: string | undefined,
   fromRelative: string,
   files: FileMap,
-  {
-    rejectUnsupportedScheme = true,
-  }: { rejectUnsupportedScheme?: boolean } = {},
+  { strict = true }: { strict?: boolean } = {},
 ) {
   if (!reference || isEmbeddedOrRemote(reference)) {
     return undefined;
   }
   if (/^[a-z][a-z\d+.-]*:/i.test(reference)) {
-    if (rejectUnsupportedScheme) {
+    if (strict) {
       throw packageError(`Unsupported resource URL: ${reference}`);
     }
     return undefined;
@@ -220,6 +221,7 @@ function resolveFileReference(
       );
 
   if (candidate === ".." || candidate.startsWith("../")) {
+    if (!strict) return undefined;
     throw packageError(
       `Resource escapes the pack input directory: ${reference}`,
     );
@@ -291,10 +293,23 @@ function requiredFile(files: FileMap, relative: string) {
   return file;
 }
 
-async function replaceAsync(
+async function inlineAssetReference(
+  reference: string,
+  relative: string,
+  files: FileMap,
+  encodeAsset: AssetEncoder,
+) {
+  const fragment = reference.indexOf("#");
+  return (
+    (await encodeAsset(requiredFile(files, relative))) +
+    (fragment < 0 ? "" : reference.slice(fragment))
+  );
+}
+
+async function replaceSpans<T extends TextSpan>(
   value: string,
-  pattern: RegExp,
-  replacer: AsyncReplacer,
+  spans: Iterable<T>,
+  replacer: (span: T) => Promise<string>,
   maxJsonBytes = Number.POSITIVE_INFINITY,
 ) {
   const output: string[] = [];
@@ -308,11 +323,11 @@ async function replaceAsync(
     }
     output.push(part);
   };
-  for (const match of value.matchAll(pattern)) {
+  for (const span of spans) {
     matched = true;
-    append(value.slice(cursor, match.index));
-    append(await replacer(match));
-    cursor = match.index + match[0].length;
+    append(value.slice(cursor, span.start));
+    append(await replacer(span));
+    cursor = span.end;
   }
   if (!matched) {
     if (jsonStringBytes(value) > maxJsonBytes) {
@@ -394,7 +409,14 @@ async function validateJavaScriptGraph(
     const callee = node.callee as AstNode | undefined;
     if (callee?.type === "Identifier" && callee.name === "fetch") {
       const first = (node.arguments as AstNode[] | undefined)?.[0];
-      const value = first?.value;
+      const value =
+        first?.type === "TemplateLiteral" &&
+        (first.expressions as unknown[]).length === 0
+          ? (first.quasis as { value: { cooked: string | null } }[])[0].value
+              .cooked
+          : first?.type === "Literal"
+            ? first.value
+            : undefined;
       const property = first?.property as { name?: string } | undefined;
       const reactResourceHintFetch =
         first?.type === "MemberExpression" &&
@@ -403,9 +425,7 @@ async function validateJavaScriptGraph(
         (node.arguments as AstNode[] | undefined)?.length === 2;
       if (
         !reactResourceHintFetch &&
-        (first?.type !== "Literal" ||
-          typeof value !== "string" ||
-          !/^(?:data:|https?:|\/\/)/i.test(value))
+        (typeof value !== "string" || !/^(?:data:|https?:|\/\/)/i.test(value))
       ) {
         unsupported = "runtime-relative fetches";
       }
@@ -747,7 +767,9 @@ async function inlineCssAssets(
           `Unresolved CSS resource in ${cssRelative}: ${reference}`,
         );
       }
-      append(`url("${await encodeAsset(requiredFile(files, relative))}")`);
+      append(
+        `url(${JSON.stringify(await inlineAssetReference(reference, relative, files, encodeAsset))})`,
+      );
     }
     cursor = url.end;
   }
@@ -788,11 +810,16 @@ function findHtmlRawTextEnd(markup: string, start: number, tagName: string) {
   return markup.length;
 }
 
-function hasHtmlAttribute(markup: string, expectedName: string) {
+interface HtmlAttribute extends TextSpan {
+  name: string;
+  value?: string;
+}
+
+function* findHtmlAttributes(markup: string): Generator<HtmlAttribute> {
   let index = 0;
   while (index < markup.length) {
     const tagStart = markup.indexOf("<", index);
-    if (tagStart < 0) return false;
+    if (tagStart < 0) return;
     if (markup.startsWith("<!--", tagStart)) {
       const commentEnd = markup.indexOf("-->", tagStart + 4);
       index = commentEnd < 0 ? markup.length : commentEnd + 3;
@@ -811,7 +838,6 @@ function hasHtmlAttribute(markup: string, expectedName: string) {
     const tagName = markup.slice(index).match(/^[A-Za-z][^\s/>]*/)?.[0];
     if (!tagName) continue;
     index += tagName.length;
-    let selfClosing = false;
     while (index < markup.length) {
       while (/[\t\n\f\r ]/.test(markup[index] ?? "")) index += 1;
       if (markup[index] === ">") {
@@ -820,7 +846,6 @@ function hasHtmlAttribute(markup: string, expectedName: string) {
       }
       if (markup[index] === "/" && markup[index + 1] === ">") {
         index += 2;
-        selfClosing = true;
         break;
       }
       const attributeStart = index;
@@ -832,28 +857,67 @@ function hasHtmlAttribute(markup: string, expectedName: string) {
         continue;
       }
       const attributeName = markup.slice(attributeStart, index).toLowerCase();
-      if (attributeName === expectedName.toLowerCase()) return true;
       while (/[\t\n\f\r ]/.test(markup[index] ?? "")) index += 1;
-      if (markup[index] !== "=") continue;
+      if (markup[index] !== "=") {
+        yield { start: attributeStart, end: index, name: attributeName };
+        continue;
+      }
       index += 1;
       while (/[\t\n\f\r ]/.test(markup[index] ?? "")) index += 1;
+      let value: string;
       if (markup[index] === '"' || markup[index] === "'") {
         const quote = markup[index];
         const valueEnd = markup.indexOf(quote, index + 1);
+        value = markup.slice(
+          index + 1,
+          valueEnd < 0 ? markup.length : valueEnd,
+        );
         index = valueEnd < 0 ? markup.length : valueEnd + 1;
       } else {
+        const valueStart = index;
         while (index < markup.length && !/[\t\n\f\r >]/.test(markup[index])) {
           index += 1;
         }
+        value = markup.slice(valueStart, index);
       }
+      yield { start: attributeStart, end: index, name: attributeName, value };
     }
     const normalizedTagName = tagName.toLowerCase();
-    if (!selfClosing && normalizedTagName === "plaintext") return false;
-    if (!selfClosing && HTML_RAW_TEXT_ELEMENTS.has(normalizedTagName)) {
-      index = findHtmlRawTextEnd(markup, index, normalizedTagName);
+    if (normalizedTagName === "plaintext") return;
+    if (HTML_RAW_TEXT_ELEMENTS.has(normalizedTagName)) {
+      const end = findHtmlRawTextEnd(markup, index, normalizedTagName);
+      if (normalizedTagName === "style") {
+        yield {
+          start: index,
+          end,
+          name: "#style",
+          value: markup.slice(index, end),
+        };
+      }
+      index = end;
     }
   }
-  return false;
+}
+
+function decodeHtmlAttribute(value: string) {
+  const named: Record<string, string> = {
+    amp: "&",
+    quot: '"',
+    apos: "'",
+    lt: "<",
+    gt: ">",
+  };
+  return value.replace(
+    /&(#x[\da-f]+|#\d+|amp|quot|apos|lt|gt);/gi,
+    (entity, name: string) => {
+      if (!name.startsWith("#")) return named[name.toLowerCase()];
+      const hex = name[1].toLowerCase() === "x";
+      const code = Number.parseInt(name.slice(hex ? 2 : 1), hex ? 16 : 10);
+      return code > 0 && code <= 0x10ffff && !(code >= 0xd800 && code <= 0xdfff)
+        ? String.fromCodePoint(code)
+        : "\ufffd";
+    },
+  );
 }
 
 async function inlineMarkupAssets(
@@ -863,29 +927,58 @@ async function inlineMarkupAssets(
   encodeAsset: AssetEncoder,
   maxJsonBytes: number,
 ) {
-  if (hasHtmlAttribute(markup, "srcset")) {
-    throw packageError("Unsupported HTML srcset resource.");
-  }
-  const result = await replaceAsync(
+  return replaceSpans(
     markup,
-    /\b(src|poster|href|data)\s*=\s*(["'])([^"']+)\2/gi,
-    async (match) => {
-      const [, attribute, quote, reference] = match;
-      if (isEmbeddedOrRemote(reference)) {
-        return match[0];
-      }
-      const relative = resolveFileReference(reference, htmlRelative, files);
-      if (!relative) {
-        if (attribute.toLowerCase() === "href") {
-          return match[0];
+    findHtmlAttributes(markup),
+    async ({ start, end, name, value }) => {
+      if (name === "srcset")
+        throw packageError("Unsupported HTML srcset resource.");
+      const original = markup.slice(start, end);
+      if (value === undefined) return original;
+      const reference = name === "#style" ? value : decodeHtmlAttribute(value);
+      let replacement: string;
+      if (name === "style" || name === "#style") {
+        replacement = await inlineCssAssets(
+          reference,
+          htmlRelative,
+          files,
+          encodeAsset,
+          maxJsonBytes,
+        );
+        if (name === "#style") return replacement;
+        if (replacement === reference) return original;
+      } else {
+        if (
+          !["src", "poster", "href", "data", "xlink:href"].includes(name) ||
+          isEmbeddedOrRemote(reference)
+        )
+          return original;
+        const relative = resolveFileReference(reference, htmlRelative, files);
+        if (!relative) {
+          if (name === "href") return original;
+          throw packageError(`Unresolved HTML resource: ${reference}`);
         }
-        throw packageError(`Unresolved HTML resource: ${reference}`);
+        replacement = await inlineAssetReference(
+          reference,
+          relative,
+          files,
+          encodeAsset,
+        );
       }
-      return `${attribute}=${quote}${await encodeAsset(requiredFile(files, relative))}${quote}`;
+      return `${name}="${replacement.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;")}"`;
     },
     maxJsonBytes,
   );
-  return result;
+}
+
+function* findJavaScriptStrings(source: string) {
+  for (const match of source.matchAll(/(["'])([^"'\\\n]+)\1/g)) {
+    yield {
+      start: match.index,
+      end: match.index + match[0].length,
+      value: match[2],
+    };
+  }
 }
 
 async function inlineJavaScriptAssets(
@@ -896,21 +989,23 @@ async function inlineJavaScriptAssets(
   encodeAsset: AssetEncoder,
   maxJsonBytes: number,
 ) {
-  const result = await replaceAsync(
+  const result = await replaceSpans(
     source,
-    /(["'])([^"'\\\n]+)\1/g,
-    async (match) => {
-      const reference = match[2];
+    findJavaScriptStrings(source),
+    async ({ start, end, value: reference }) => {
+      const original = source.slice(start, end);
       if (isEmbeddedOrRemote(reference)) {
-        return match[0];
+        return original;
       }
       const relative = resolveFileReference(reference, scriptRelative, files, {
-        rejectUnsupportedScheme: false,
+        strict: false,
       });
       if (!relative || /\.(?:js|mjs|css)$/i.test(relative)) {
-        return match[0];
+        return original;
       }
-      return `${match[1]}${await encodeAsset(requiredFile(files, relative))}${match[1]}`;
+      return JSON.stringify(
+        await inlineAssetReference(reference, relative, files, encodeAsset),
+      );
     },
     maxJsonBytes,
   );

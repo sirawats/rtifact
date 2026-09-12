@@ -25,6 +25,11 @@ The package SHALL expose a `rtifact` executable that supports a build form accep
 - **WHEN** a user runs `rtifact pack dist --output index.html`
 - **THEN** the CLI packages the compatible application in `dist` into `index.html`
 
+#### Scenario: Filename resembles an option
+
+- **WHEN** the user places `--` before an input filename that resembles a CLI option
+- **THEN** every following argument is treated as a positional value in both build and pack forms
+
 #### Scenario: Missing entry argument
 
 - **WHEN** a user invokes a build or pack form without its required input path

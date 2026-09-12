@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Affix,
   Alert,
@@ -237,7 +237,7 @@ function Section({ id, title, components, children }) {
           </div>
         }
       >
-        <div className="grid gap-5 md:grid-cols-2">{children}</div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">{children}</div>
       </Card>
     </section>
   );
@@ -250,6 +250,15 @@ function Showcase() {
   const [tourOpen, setTourOpen] = useState(false);
   const [transferTargetKeys, setTransferTargetKeys] = useState(["gamma"]);
   const tourTarget = useRef(null);
+  const affixContainer = useRef(null);
+  const affixRef = useRef(null);
+
+  useEffect(() => {
+    const frameWindow = affixContainer.current.ownerDocument.defaultView;
+    const update = () => affixRef.current?.updatePosition();
+    frameWindow.addEventListener("scroll", update);
+    return () => frameWindow.removeEventListener("scroll", update);
+  }, []);
 
   return (
     <main className="min-h-screen p-4 sm:p-6 lg:p-8">
@@ -433,7 +442,13 @@ function Showcase() {
             />
           </Demo>
           <Demo title="Pagination">
-            <Pagination defaultCurrent={3} total={80} showSizeChanger />
+            <Pagination
+              defaultCurrent={3}
+              total={80}
+              showSizeChanger
+              size="small"
+              showLessItems
+            />
           </Demo>
           <Demo title="Steps">
             <Steps
@@ -446,12 +461,21 @@ function Showcase() {
             />
           </Demo>
           <Demo title="Affix">
-            <Affix offsetTop={8}>
-              <Button>Affixed while scrolling</Button>
-            </Affix>
+            <div className="h-40 overflow-auto" ref={affixContainer}>
+              <div className="h-80 pt-8">
+                <Affix
+                  ref={affixRef}
+                  offsetTop={8}
+                  target={() => affixContainer.current}
+                >
+                  <Button>Affixed within this panel</Button>
+                </Affix>
+              </div>
+            </div>
           </Demo>
           <Demo title="Anchor">
             <Anchor
+              affix={false}
               items={[
                 { key: "entry", href: "#data-entry", title: "Data Entry" },
                 {

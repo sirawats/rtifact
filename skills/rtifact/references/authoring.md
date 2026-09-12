@@ -132,10 +132,16 @@ write their complete class names statically in the source:
 - Surfaces: `bg-background`, `bg-card`, `bg-popover`, `bg-code`
 - Text: `text-foreground`, `text-muted-foreground`, `text-primary`
 - Structure: `border-border`, `ring-ring`, `shadow-card`
-- Status: `text-success`, `text-warning`, `text-danger`, `text-info` and their
-  matching `*-background` utilities
+- Status: pair `text-success-foreground` with `bg-success-background`,
+  `text-warning-foreground` with `bg-warning-background`,
+  `text-danger-foreground` with `bg-danger-background`, or
+  `text-info-foreground` with `bg-info-background`
 - Shape and type: `rounded-sm`, `rounded-md`, `rounded-lg`, `font-sans`,
   `font-mono`
+
+Status utilities such as `text-warning` use algorithm seed colors, which are
+not guaranteed readable as text. Use the foreground/background pairs above for
+status text; validate contrast against the actual surface for other combinations.
 
 Avoid hard-coded page-wide palettes, `.ant-*` selector overrides, and large
 custom stylesheets. Use a `.ts` or `.jsx` theme module for coordinated semantic
@@ -203,28 +209,23 @@ export default function Report() {
 
 - Inline data the user supplies.
 - Parse CSV or JSON once at module level, not inside render functions.
-- For large datasets (roughly > 500 rows), note the size impact and confirm
-  before embedding — the artifact file grows proportionally.
+- For large datasets, assess serialized byte size and rendering cost against
+  the requested delivery constraints. Row count alone is not a reason to pause.
+  Embed the supplied data within the authorized scope; clarify only when meeting
+  a size or performance constraint requires changing or reducing the content.
 
 ## Guardrails
 
-- Ask for the user's explicit confirmation before embedding credentials, tokens,
-  PII, or secrets.
-- Ask for the user's explicit confirmation before adding application-level API
-  requests, `fetch` calls, external data loading, or connections to other
-  services. Explain what service the artifact contacts and what data it sends or
-  receives. This does not include Rtifact-managed runtimes selected by the
-  output mode.
-- After confirmation, clearly warn the user in the handoff and suggest how to
-  use and share the artifact safely. Tailor this notice to the actual risk:
-
-  > **WARNING:** This artifact contains [sensitive data] or connects to [external
-  > service and data exchanged]. Anyone with access to the file may be able to
-  > inspect embedded data and source. Use and share it only with [intended
-  > audience], and remove or revoke sensitive access when it is no longer needed.
-
-- When an external request is approved, cover its loading, error, and empty
-  states.
+- Keep credentials, access tokens, and secrets out of shareable source.
+- Honor existing user authorization for supplied data and requested integrations;
+  do not ask again for the same operation. Ask before embedding sensitive data
+  or sending data to a service beyond that scope, or when the intended disclosure
+  or audience is unclear. Explain the specific data and destination involved.
+- In the handoff, identify material external dependencies and sensitive embedded
+  data, including who can inspect it, when relevant to sharing. Tailor the notice
+  to the actual exposure; ordinary public-data requests do not need a generic
+  security warning.
+- For external requests, cover loading, error, and empty states.
 - Do not invent or estimate facts, metrics, testimonials, links, or available
   actions. Ask for required source data or label placeholders clearly.
 - Insert only HTML returned by Prism into `dangerouslySetInnerHTML`; never append

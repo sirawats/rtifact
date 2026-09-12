@@ -169,6 +169,11 @@ Each preset SHALL define one semantic theme manifest that maps page, surface, fo
 - **WHEN** Ant Design components render normal progress and interaction accents, links, focus indicators, selections, or semantic feedback under any built-in preset
 - **THEN** normal accents use the preset's on-surface primary brand colors, links use link colors, focus uses focus colors, selections use the paired selection colors, and info, success, warning, and error feedback retain their matching status colors
 
+#### Scenario: Secondary text remains readable
+
+- **WHEN** native muted text, Ant Design secondary typography, or statistic descriptions render under a theme
+- **THEN** they use the semantic muted foreground with at least 4.5:1 contrast on the canvas, surface, and raised surface; theme validation rejects muted colors that fail any of these pairs
+
 ### Requirement: Theme-transparent JSX authoring
 
 The CLI-managed stylesheet graph SHALL make the selected preset available through inherited document styling, ordinary Ant Design props, and conventional unbranded semantic Tailwind theme names, and SHALL NOT require application JSX to use an Rtifact-specific class-name vocabulary. Each theme SHALL select a native table treatment from row dividers, column grid lines, or alternating row surfaces.

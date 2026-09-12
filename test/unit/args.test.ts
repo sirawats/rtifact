@@ -116,6 +116,33 @@ test("supports help and version without an entry", () => {
   assert.equal(parseArgs(["--version"]).action, "version");
 });
 
+test("treats every argument after -- as a positional", () => {
+  for (const entry of [
+    "--output=Demo.jsx",
+    "--theme=Demo.jsx",
+    "--help",
+    "-o",
+  ]) {
+    const parsed = parseArgs(["--", entry]);
+    assert.equal(parsed.action, "build");
+    if (parsed.action === "build") {
+      assert.equal(parsed.entry, entry);
+      assert.equal(parsed.output, undefined);
+      assert.equal(parsed.outDir, undefined);
+      assert.equal(parsed.theme, "default");
+    }
+  }
+  assert.deepEqual(
+    parseArgs(["pack", "--output", "app.html", "--", "--out-dir=build"]),
+    {
+      action: "pack",
+      inputDir: "--out-dir=build",
+      output: "app.html",
+      force: false,
+    },
+  );
+});
+
 test("keeps the documented CLI help synchronized with runtime usage", async () => {
   const readme = await readFile(path.join(repository, "README.md"), "utf8");
   const documentedUsage = readme.match(/## CLI\s+```text\n([\s\S]*?)\n```/);

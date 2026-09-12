@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+- Correct official skill verification and contrast guidance, link the authoring
+  examples, explain source-recovery dependencies, and honor existing user
+  authorization for data and integrations.
+- Fix mobile component-showcase overflow and overlapping sticky demos, and show
+  complete tax-profile choices on narrow screens.
+- Keep the homepage at its initial scroll position, fit its navigation and
+  example labels on small phones, and render Mobile previews at natural scale.
+- Apply the muted foreground to secondary Ant Design text and enforce 4.5:1
+  contrast on all theme surfaces, with adjusted Catppuccin Latte and Frappé colors.
+
+- Fix single-file builds rejecting remote fetch URLs after minification and
+  packaging rejecting ordinary JavaScript path text.
+- Embed unquoted HTML and inline CSS asset references, preserve asset URL
+  fragments, and leave documentation text and non-resource attributes unchanged.
+- Honor the `--` argument separator for filenames that resemble options.
+
 ## 1.0.4 - 2026-08-12
 
 - Embed the exact original direct `.jsx` or `.tsx` entry source in readable,

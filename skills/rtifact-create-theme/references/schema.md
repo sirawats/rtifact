@@ -107,7 +107,8 @@ a build error.
 | --------------------------------------------------------- | ------- |
 | `text` / `canvas`                                         | 4.5:1   |
 | `text` / `surface`                                        | 4.5:1   |
-| `textMuted` / `canvas`                                    | 3:1     |
+| `text` / `codeBackground`                                 | 4.5:1   |
+| `textMuted` / `canvas`, `surface`, `surfaceRaised`        | 4.5:1   |
 | `link` / `canvas`                                         | 4.5:1   |
 | `primaryText` / `primary`                                 | 4.5:1   |
 | `primaryAccent` and hover / `surface` and `surfaceRaised` | 3:1     |
@@ -116,10 +117,12 @@ a build error.
 | `selectionText` / `selection`                             | 4.5:1   |
 | Status `foreground` / `background`                        | 4.5:1   |
 
-**Practical tip:** When a pair fails, compute contrast with the browser DevTools
-color picker (eyedropper → check contrast), `colorjs.io`, or the APCA Contrast
-Calculator. For normal 16 px body text WCAG AA requires 4.5:1; for large text
-(≥ 18 px regular or ≥ 14 px bold) the threshold drops to 3:1.
+**Practical tip:** Use a WCAG 2.x contrast-ratio calculator or the browser
+DevTools contrast check, not APCA's different metric. The
+[large-text exception](https://www.w3.org/WAI/WCAG20/Understanding/contrast-minimum.html)
+starts at 18pt (24px) regular or 14pt (approximately 18.67px) bold and permits
+3:1; smaller text requires 4.5:1. The fixed theme-role thresholds above remain
+mandatory regardless of an artifact's font sizes.
 
 ---
 

@@ -577,6 +577,7 @@ export function createTheme(definition: ThemeDefinition): Theme {
         colorBgElevated: colors.surfaceRaised,
         colorText: colors.text,
         colorTextSecondary: colors.textMuted,
+        colorTextDescription: colors.textMuted,
         colorBorder: colors.border,
         colorLink: colors.link,
         borderRadius: Number.parseFloat(radius.medium) * 16,
@@ -776,7 +777,13 @@ export function validateThemeCatalog(themes: readonly Theme[] = THEMES) {
       colors.codeBackground,
       4.5,
     );
-    requireContrast(theme, "muted text", colors.textMuted, colors.canvas, 3);
+    for (const surface of [
+      colors.canvas,
+      colors.surface,
+      colors.surfaceRaised,
+    ]) {
+      requireContrast(theme, "muted text", colors.textMuted, surface, 4.5);
+    }
     requireContrast(theme, "link", colors.link, colors.canvas, 4.5);
     requireContrast(
       theme,
