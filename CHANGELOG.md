@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 1.0.5 - 2026-09-12
+
 - Correct official skill verification and contrast guidance, link the authoring
   examples, explain source-recovery dependencies, and honor existing user
   authorization for data and integrations.
