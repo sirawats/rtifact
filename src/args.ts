@@ -125,6 +125,10 @@ export function parseArgs(argv: string[]): ParsedArguments {
 
   for (let index = startIndex; index < argv.length; index += 1) {
     const arg = argv[index];
+    if (!parseOptions) {
+      positionals.push(arg);
+      continue;
+    }
     if (parseOptions && arg === "--") {
       parseOptions = false;
       continue;

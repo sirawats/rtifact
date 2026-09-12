@@ -174,7 +174,8 @@ Rtifact rejects invalid six-digit hex colors and these failing pairs:
 | ------------------------ | --------------------------------------------------------- | ------: |
 | Body                     | `text` / `canvas`                                         |   4.5:1 |
 | Surface                  | `text` / `surface`                                        |   4.5:1 |
-| Muted                    | `textMuted` / `canvas`                                    |     3:1 |
+| Inline code              | `text` / `codeBackground`                                 |   4.5:1 |
+| Muted                    | `textMuted` / `canvas`, `surface`, `surfaceRaised`        |   4.5:1 |
 | Link                     | `link` / `canvas`                                         |   4.5:1 |
 | Filled control           | `primaryText` / `primary`                                 |   4.5:1 |
 | Accent                   | `primaryAccent` and hover / `surface` and `surfaceRaised` |     3:1 |
@@ -186,10 +187,12 @@ Rtifact rejects invalid six-digit hex colors and these failing pairs:
 `primary`, `primaryAccent`, and `link` may be different. Use that escape hatch
 when one brand color cannot satisfy every role.
 
-**Finding a passing value:** compute contrast with the browser DevTools color
-picker (eyedropper → check contrast), `colorjs.io`, or the APCA Contrast
-Calculator. For normal 16 px text the WCAG AA threshold is 4.5:1; for large
-text (≥ 18 px regular or ≥ 14 px bold) it drops to 3:1. See
+**Finding a passing value:** use a WCAG 2.x contrast-ratio calculator or the
+browser DevTools contrast check. APCA uses a different metric and cannot verify
+these ratios. Under [WCAG's large-text definition](https://www.w3.org/WAI/WCAG20/Understanding/contrast-minimum.html),
+the 3:1 threshold applies at 18pt (24px) regular or 14pt (approximately 18.67px)
+bold; smaller text requires 4.5:1. Rtifact's fixed role thresholds above still
+apply regardless of the font size in one artifact. See
 [references/schema.md](references/schema.md) for the full per-field table.
 
 ## Optional named components
@@ -257,6 +260,10 @@ build proves compatibility, not visual quality.
   both.
 - `insufficient primary accent contrast`: set a separate `primaryAccent` and
   optionally `primaryAccentHover`.
+- `insufficient muted text contrast`: adjust `textMuted` to reach 4.5:1 on
+  `canvas`, `surface`, and `surfaceRaised`.
+- `insufficient inline code contrast`: adjust `text` or `codeBackground` to
+  reach 4.5:1, preserving the other body-text contrast pairs.
 - `insufficient selection contrast`: change `selectionText`, `selection`, or
   both.
 - `insufficient primary border contrast`: `focus` is unsafe on a surface.

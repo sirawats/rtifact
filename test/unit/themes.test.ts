@@ -142,6 +142,38 @@ test("validates the complete immutable theme catalog", async () => {
   }
 });
 
+test("keeps secondary component text readable on every theme surface", () => {
+  for (const theme of THEMES) {
+    const colors = theme.semantic.colors;
+    const resolved = antTheme.getDesignToken({
+      algorithm:
+        theme.appearance === "dark"
+          ? antTheme.darkAlgorithm
+          : antTheme.defaultAlgorithm,
+      token: theme.antDesign.token,
+    });
+    assert.equal(resolved.colorTextDescription, colors.textMuted, theme.id);
+    for (const background of [
+      colors.canvas,
+      colors.surface,
+      colors.surfaceRaised,
+    ]) {
+      assert.ok(
+        contrastRatio(
+          compositeColor(resolved.colorTextDescription, background),
+          background,
+        ) >= 4.5,
+        theme.id,
+      );
+    }
+  }
+  const invalid = createTheme({
+    ...defaultDef,
+    colors: { ...defaultDef.colors, textMuted: "#888888" },
+  });
+  assert.throws(() => validateThemeCatalog([invalid]), /muted text contrast/);
+});
+
 test("stores every bundled preset as a checked JSX manifest", async () => {
   const themeDirectory = path.join(repository, "src/themes");
   const presetFiles = (await readdir(themeDirectory))

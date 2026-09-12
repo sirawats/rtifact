@@ -146,6 +146,26 @@ The `pack` workflow SHALL validate that an input build can be represented by the
 - **WHEN** the input directory has one HTML entry, a supported executable entry bundle, local styles, and convertible local assets
 - **THEN** the packager normalizes and packages the build successfully
 
+#### Scenario: Static remote fetch URL after minification
+
+- **WHEN** an executable bundle fetches a remote or data URL expressed as a string literal or a template literal with no substitutions
+- **THEN** packaging accepts that URL while continuing to reject unresolved relative runtime fetches
+
+#### Scenario: Ordinary JavaScript path text
+
+- **WHEN** a JavaScript string contains a path outside the pack input but is ordinary application text
+- **THEN** packaging preserves the text without treating it as a required local resource or reading outside the input
+
+#### Scenario: HTML and inline CSS asset references
+
+- **WHEN** real HTML resource attributes use quoted or unquoted values, or style attributes and style elements reference convertible local assets
+- **THEN** packaging embeds the assets and preserves URL fragments, or rejects unresolved required resources before publication
+
+#### Scenario: Inert resource-like text
+
+- **WHEN** comments, raw text elements, prose, or non-resource attributes contain text resembling resource attributes
+- **THEN** packaging preserves that text without resolving or rewriting it as a resource
+
 #### Scenario: Missing HTML entry
 
 - **WHEN** the input directory does not contain a readable `index.html`

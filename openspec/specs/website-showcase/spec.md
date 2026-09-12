@@ -37,11 +37,11 @@ The website SHALL provide a responsive example selector and preview the selected
 #### Scenario: View showcase on a narrow screen
 
 - **WHEN** the showcase does not have desktop-width space
-- **THEN** example navigation and preview stack without horizontal page overflow
+- **THEN** example navigation and preview stack without horizontal page overflow, example labels remain fully visible, and the homepage header fits a 320px viewport
 
 ### Requirement: Preview viewport modes
 
-The website SHALL switch the example preview between an independent 16:9 desktop viewport and a centered 6:13 mobile viewport while retaining the configured content scale.
+The website SHALL switch the example preview between an independent 16:9 desktop viewport with its configured content scale and a centered 6:13 mobile viewport rendered at natural scale. Initial visits below 640px SHALL select Mobile.
 
 #### Scenario: Select desktop viewport
 
@@ -51,7 +51,7 @@ The website SHALL switch the example preview between an independent 16:9 desktop
 #### Scenario: Select mobile viewport
 
 - **WHEN** a user selects Mobile
-- **THEN** the example renders in a 6:13 viewport and responsive styles evaluate against that viewport
+- **THEN** the example renders in a 6:13 viewport at natural scale, up to 390px wide, and responsive styles evaluate against the visible iframe width without shrinking text
 
 ### Requirement: Scoped theme preview
 
@@ -66,3 +66,8 @@ The website SHALL derive its theme controls from the canonical theme catalog, pa
 
 - **WHEN** a preset is added to the canonical theme catalog
 - **THEN** the next website build exposes it without adding a theme mapping to `website/index.tsx`
+
+#### Scenario: Theme strip maintains visibility without moving the page
+
+- **WHEN** the website loads or the active theme family changes
+- **THEN** only the horizontal theme strip scrolls to reveal the active family; the surrounding page retains its vertical scroll position

@@ -48,6 +48,26 @@ The packaged authoring and theme skills SHALL use Rtifact identifiers and SHALL 
 - **WHEN** an agent loads the Rtifact theme skill
 - **THEN** the skill describes theme modules and reusable brand components as tools for coherent artifact presentation without changing the artifact-first authoring model
 
+#### Scenario: Verification tooling is unavailable
+
+- **WHEN** an artifact builds successfully but the agent cannot inspect it in a browser
+- **THEN** the skill directs the agent to report the successful build and the unverified visual and interaction checks separately
+
+#### Scenario: Artifact source is recovered for revision
+
+- **WHEN** an agent extracts readable entry metadata from a received HTML artifact
+- **THEN** the skill explains that imported source files, assets, and custom themes are not restored by entry extraction and must be recovered before rebuilding
+
+#### Scenario: Data and integrations are already authorized
+
+- **WHEN** the user has authorized supplied data or a requested integration
+- **THEN** the skill directs the agent to proceed within that scope without repeated confirmation, assess data size by bytes and rendering cost rather than a fixed row threshold, and clarify new sensitive-data exposure or unresolved delivery constraints
+
+#### Scenario: Contrast guidance is followed
+
+- **WHEN** an agent follows the authoring or theme skill's contrast guidance
+- **THEN** status text uses semantic foreground/background pairs, documented role thresholds match the theme validator, and general WCAG large-text thresholds distinguish points from CSS pixels
+
 ### Requirement: Rtifact visual identity
 
 Active public surfaces SHALL use a simple Rtifact identity and SHALL NOT retain YOLO- or Chihuahua-derived branding assets or explanations.

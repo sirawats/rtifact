@@ -102,6 +102,24 @@ export default () => <main className="p-8"><Button>Single artifact</Button></mai
   }
 });
 
+test("builds remote fetches through minification in both file modes", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  await writeFixture(fixture, {
+    "Remote.jsx": `fetch("https://example.com/api"); export default () => <main>Remote</main>;`,
+  });
+  for (const flags of [[], ["--self-contained"]]) {
+    const result = await invoke(["Remote.jsx", "--force", ...flags], {
+      cwd: fixture,
+    });
+    assert.equal(result.exitCode, 0, result.stderr);
+    const payload = readEmbeddedPayload(
+      await readFile(path.join(fixture, "Remote.html"), "utf8"),
+    );
+    assert.ok(payload.script.includes("https://example.com/api"));
+  }
+});
+
 test("packs an existing build without changing its input", async (t) => {
   const fixture = await makeFixture();
   t.after(() => rm(fixture, { recursive: true, force: true }));

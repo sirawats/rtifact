@@ -148,6 +148,83 @@ test("normalizes only the controlled CDN import map", async (t) => {
   await assert.rejects(normalizeBuildDirectory(fixture), /controlled CDN/);
 });
 
+test("preserves ordinary path text while rejecting relative runtime fetches", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const script = `document.body.textContent="../../src";`;
+  await writeFixture(fixture, {
+    "index.html": `<html><head></head><body><script type="module" src="app.js"></script></body></html>`,
+    "app.js": script,
+  });
+  assert.equal((await normalizeBuildDirectory(fixture)).script, script);
+  for (const script of [
+    'fetch("../../outside.json");',
+    "fetch(`./missing.json`);",
+    "fetch(`https://${host}/api`);",
+  ]) {
+    await writeFixture(fixture, { "app.js": script });
+    await assert.rejects(
+      normalizeBuildDirectory(fixture),
+      /runtime-relative fetches/,
+    );
+  }
+  await writeFixture(fixture, {
+    "app.js": "fetch(`https://example.com/api`);fetch(`data:text/plain,ok`);",
+  });
+  await normalizeBuildDirectory(fixture);
+});
+
+test("embeds unquoted HTML and inline CSS resources with their fragments", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const svg =
+    '<svg xmlns="http://www.w3.org/2000/svg"><symbol id="check"/></svg>';
+  const embedded = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}#check`;
+  await writeFixture(fixture, {
+    "index.html": `<html><head><link rel="stylesheet" href="app.css"><style>.icon{background:url(logo.svg#check)}</style></head><body><img src=logo.svg#check><svg><use href="logo.svg#check"></use><use xlink:href='logo.svg#check'></use></svg><div style="background:url(&quot;logo.svg#check&quot;)"></div><script type="module" src="app.js"></script></body></html>`,
+    "app.css": '.icon{background:url("logo.svg#check")}',
+    "app.js": 'document.body.dataset.logo="logo.svg#check";',
+    "logo.svg": svg,
+  });
+  const payload = await normalizeBuildDirectory(fixture);
+  assert.ok(payload.body.includes(`src="${embedded}"`));
+  assert.ok(payload.body.includes(`href="${embedded}"`));
+  assert.ok(payload.body.includes(`xlink:href="${embedded}"`));
+  assert.ok(
+    payload.body.includes(`style="background:url(&quot;${embedded}&quot;)"`),
+  );
+  assert.ok(payload.head.includes(`url("${embedded}")`));
+  assert.ok(payload.styles[0].includes(`url("${embedded}")`));
+  const sandbox = { document: { body: { dataset: { logo: "" } } } };
+  vm.runInNewContext(payload.script, sandbox);
+  assert.equal(sandbox.document.body.dataset.logo, embedded);
+
+  for (const body of [
+    "<img src=missing.svg>",
+    '<div style="background:url(missing.svg)"></div>',
+    "<img src=../outside.svg>",
+  ]) {
+    await writeFixture(fixture, {
+      "index.html": `<html><head></head><body>${body}<script type="module" src="app.js"></script></body></html>`,
+    });
+    await assert.rejects(
+      normalizeBuildDirectory(fixture),
+      /Unresolved|escapes the pack input/,
+    );
+  }
+});
+
+test("leaves documentation and non-resource attributes unchanged", async (t) => {
+  const fixture = await makeFixture();
+  t.after(() => rm(fixture, { recursive: true, force: true }));
+  const body = `<!-- <img src="missing.png"> --><textarea><img src="example.png"></textarea><textarea/><img src="literal.png"></textarea><p>src="text.png"</p><img data-src="lazy.png"><div title='src="quoted.png"'></div>`;
+  await writeFixture(fixture, {
+    "index.html": `<html><head></head><body>${body}<script type="module" src="app.js"></script></body></html>`,
+    "app.js": 'console.log("ready");',
+  });
+  assert.equal((await normalizeBuildDirectory(fixture)).body, body);
+});
+
 test("rejects incompatible build resource shapes", async (t) => {
   const fixture = await makeFixture();
   t.after(() => rm(fixture, { recursive: true, force: true }));

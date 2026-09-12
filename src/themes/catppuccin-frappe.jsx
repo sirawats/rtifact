@@ -18,7 +18,7 @@ export default {
     surface: "#383c4f",
     surfaceRaised: "#414559",
     text: "#c6d0f5",
-    textMuted: "#a5adce",
+    textMuted: "#aab2d3",
     border: "#626880",
     primary: "#8caaee",
     primaryText: "#18202f",

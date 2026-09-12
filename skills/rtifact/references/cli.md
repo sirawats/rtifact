@@ -52,6 +52,16 @@ python3 -c 'import html,re,sys; text=open(sys.argv[1], encoding="utf-8", newline
 This metadata is present for default and `--self-contained` direct builds only;
 directory output and `pack` do not have an original direct entry to expose.
 
+The recovered entry is not a complete source bundle. Its relative imports still
+need the original modules, stylesheets, and assets, and the selected custom
+theme must be supplied separately. Before rebuilding, inspect the imports and
+restore those files from the supplied project, preserving relative paths and
+the original theme selection. For example, the bundled TaxCalculator entry
+imports `./favicon.svg`; extracting its JSX alone does not restore that file.
+If required source files or theme information are missing, identify them and
+ask for what is needed. Do not silently substitute missing application logic or
+branding. The delivered HTML can still run without these authoring files.
+
 Choose this mode for the smallest shareable reports, guides, demos,
 comparisons, and small tools.
 
@@ -157,10 +167,23 @@ embed secrets.
 
 ## Verification
 
-Run the smallest build matching the requested deliverable. A successful CLI
-build completes the task. Return the output and ask the user to open the
-generated HTML in their browser; do not open, render, or inspect it yourself,
-and do not create a screenshot or snapshot.
+Run the smallest build matching the requested deliverable, then open that
+built output in a browser. Build success proves packaging compatibility, not
+visual quality or working interactions.
+
+- Inspect a narrow mobile viewport (320–390px) and a desktop viewport. Check
+  readable text, spacing, alignment, unclipped labels, and unintended horizontal
+  overflow. Wide tables and code may scroll within their own containers.
+- Exercise the main interaction and its reachable error or empty state. Check
+  keyboard access, visible focus, and unexpected page scrolling or sticky overlap.
+- Verify the requested delivery mode: open portable HTML through `file://`,
+  check offline startup when `--self-contained` was requested, or serve directory
+  output through a local static server.
+
+Fix confirmed issues and rebuild; recheck the affected behavior. Use screenshots
+when they help diagnose or communicate a visual issue. Return the artifact and
+summarize what was checked. If browser tooling is unavailable, report the build
+result and explicitly identify visual and interaction checks as unverified.
 
 ## When a build fails
 

@@ -31,8 +31,8 @@ Common examples include:
    required content, and any interaction that helps the audience understand or
    act on it. Inspect supplied files before deciding how to present them.
 2. Read [references/authoring.md](references/authoring.md) before writing or
-   substantially revising an entry. Follow its authoring rules and guardrails,
-   including any required user confirmation.
+   substantially revising an entry, then inspect the closest example below.
+   Reuse relevant patterns and follow the user's existing authorization.
 3. Create a readable `.jsx` entry with one default-exported React
    component. Organize the supplied material around the audience's
    purpose, preserve its facts, and add UI or interaction only when it improves
@@ -45,10 +45,34 @@ Common examples include:
 5. Read [references/cli.md](references/cli.md), choose the output mode, and build.
    Default to portable HTML; use `--self-contained` for offline delivery or
    `--out-dir` for static hosting.
-6. When the Rtifact CLI builds successfully, return the output and any required
-   handoff warning, then stop. Ask the user to open the generated HTML in their
-   browser. Do not open, render, or inspect it yourself, and do not create a
-   screenshot or snapshot.
+6. After building, inspect the rendered artifact at a narrow mobile width and
+   a desktop width, and exercise its main interaction. Follow the verification
+   checks in [references/cli.md](references/cli.md#verification), fix confirmed
+   issues, and rebuild. Return the output with the checks performed and any
+   material limitations. If browser tooling is unavailable, say that visual
+   and interaction checks remain unverified.
+
+## Choose an example
+
+Read only the closest example; adapt its structure to the user's content.
+These are illustrative artifacts, not factual source material.
+
+| Deliverable                                  | Example                                               |
+| -------------------------------------------- | ----------------------------------------------------- |
+| Calculator or small form-based tool          | [TaxCalculator.jsx](examples/TaxCalculator.jsx)       |
+| Setup instructions and task progress         | [SetupGuide.jsx](examples/SetupGuide.jsx)             |
+| API test results                             | [APITestReport.jsx](examples/APITestReport.jsx)       |
+| Code review findings                         | [CodeReviewReport.jsx](examples/CodeReviewReport.jsx) |
+| Technical specification or design comparison | [Techspec.jsx](examples/Techspec.jsx)                 |
+| API reference                                | [APIDocs.jsx](examples/APIDocs.jsx)                   |
+| Metrics dashboard                            | [Analytics.jsx](examples/Analytics.jsx)               |
+| Article or editorial layout                  | [Editorial.jsx](examples/Editorial.jsx)               |
+| Product landing page                         | [SaaS.jsx](examples/SaaS.jsx)                         |
+| Canvas simulation                            | [MagneticForceSim.jsx](examples/MagneticForceSim.jsx) |
+| Component and theme inspection               | [AntD.jsx](examples/AntD.jsx)                         |
+
+The examples import [favicon.svg](examples/favicon.svg). Copy that asset with
+an example, or deliberately replace its icon import and `RTIFACT.icon` metadata.
 
 ## Portable handoff
 

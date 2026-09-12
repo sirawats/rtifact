@@ -7,7 +7,6 @@ import {
   Progress,
   Radio,
   Row,
-  Segmented,
   Slider,
   Statistic,
   Table,
@@ -225,16 +224,17 @@ export default function TaxCalculator() {
                   >
                     Filing Profile
                   </div>
-                  <Segmented
+                  <Radio.Group
                     aria-labelledby="filing-status-label"
-                    block
-                    options={[
-                      { label: "Individual", value: "individual" },
-                      { label: "Joint household", value: "joint" },
-                      { label: "Caregiver household", value: "caregiver" },
-                    ]}
+                    className="flex flex-wrap gap-x-4 gap-y-2"
+                    options={Object.entries(FILING_PROFILES).map(
+                      ([value, profile]) => ({
+                        label: profile.label,
+                        value,
+                      }),
+                    )}
                     value={filingStatus}
-                    onChange={(v) => setFilingStatus(String(v))}
+                    onChange={(event) => setFilingStatus(event.target.value)}
                   />
                 </div>
 

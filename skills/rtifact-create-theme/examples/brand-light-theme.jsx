@@ -40,7 +40,7 @@ export default {
     surface: C.surface,
     surfaceRaised: C.raised,
     text: C.text, // #1a1a1a / #f8f7f4 → ~17:1 ✓
-    textMuted: C.muted, // #6b6b6b / #f8f7f4 → ~5.3:1 ✓ (3:1 minimum)
+    textMuted: C.muted, // 4.5:1 minimum on canvas, surface, and surfaceRaised
     border: C.border,
 
     primary: C.primary, // #0e7a6e
@@ -55,7 +55,7 @@ export default {
     selection: "#b2e0da", // Teal wash for selection background
     selectionText: "#0a2e2a", // Dark teal text on selection → ~12:1 ✓
 
-    codeBackground: "#edeae5",
+    codeBackground: "#edeae5", // 4.5:1 minimum against text
   },
 
   typography: {

@@ -45,7 +45,7 @@ export default {
     surface: C.surface, // Card / panel background
     surfaceRaised: C.raised, // Elevated popover / drawer background
     text: C.text, // Primary body text (4.5:1 on canvas and surface)
-    textMuted: C.muted, // Secondary text (3:1 on canvas)
+    textMuted: C.muted, // Secondary text (4.5:1 on canvas, surface, and surfaceRaised)
     border: C.border, // Dividers, input outlines, card edges
 
     // --- Required control roles ---
@@ -65,7 +65,7 @@ export default {
     selection: C.primary, // Text-selection background
     selectionText: C.primaryText, // Text on selection (4.5:1 on selection)
 
-    // --- Required code background ---
+    // --- Required code background (4.5:1 against text) ---
     codeBackground: "#080b0f",
   },
 

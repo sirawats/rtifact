@@ -369,6 +369,7 @@ function ThemePicker({
   onStepTheme: (offset: number) => void;
 }) {
   const activeFamilyRef = useRef<HTMLButtonElement>(null);
+  const familyStripRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
@@ -378,10 +379,14 @@ function ThemePicker({
   }, [isPlaying, onStepTheme]);
 
   useEffect(() => {
-    activeFamilyRef.current?.scrollIntoView({
-      block: "nearest",
-      inline: "nearest",
-    });
+    const strip = familyStripRef.current;
+    const active = activeFamilyRef.current;
+    if (!strip || !active) return;
+    const viewport = strip.getBoundingClientRect();
+    const item = active.getBoundingClientRect();
+    strip.scrollLeft +=
+      Math.min(0, item.left - viewport.left) +
+      Math.max(0, item.right - viewport.right);
   }, [activeFamily.id]);
 
   return (
@@ -399,6 +404,7 @@ function ThemePicker({
       </Button>
       <div className="relative min-w-0 flex-1">
         <div
+          ref={familyStripRef}
           aria-label="Theme families"
           className="overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
@@ -533,7 +539,10 @@ export default function Website() {
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeExampleId, setActiveExampleId] = useState(EXAMPLES[0].id);
   const [activeThemeId, setActiveThemeId] = useState(THEMES[0].id);
-  const [previewMode, setPreviewMode] = useState<PreviewMode>("desktop");
+  const [previewMode, setPreviewMode] = useState<PreviewMode>(() =>
+    window.matchMedia("(max-width: 639px)").matches ? "mobile" : "desktop",
+  );
+  const previewScale = previewMode === "mobile" ? 1 : PREVIEW_SCALE;
   const [previewDocument, setPreviewDocument] = useState<Document | null>(null);
 
   const copyCode = (code: string) => {
@@ -578,6 +587,7 @@ export default function Website() {
     ].map((node) => node.cloneNode(true));
     frameDocument.head.replaceChildren(base, ...styles);
     frameDocument.body.style.margin = "0";
+    frameDocument.body.style.minWidth = "0";
     frameDocument.body.style.overflowX = "hidden";
     frameDocument.addEventListener("click", (event) => {
       if (!(event.target instanceof frameWindow.Element)) return;
@@ -606,14 +616,14 @@ export default function Website() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       {/* Navigation */}
-      <nav className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50 px-6 py-2">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
-          <div className="flex items-center gap-3 font-bold text-xl">
+      <nav className="border-b border-border bg-card/80 backdrop-blur sticky top-0 z-50 px-4 py-2 sm:px-6">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-2">
+          <div className="flex shrink-0 items-center gap-2 font-bold text-xl sm:gap-3">
             <img src={favicon} alt="" aria-hidden="true" className="size-8" />
             <span>Rtifact</span>
             <Tag color="blue">v{version}</Tag>
           </div>
-          <Space size="medium">
+          <div className="flex items-center gap-4">
             <a
               href="#features"
               className="text-muted-foreground hover:text-foreground hidden sm:inline-block"
@@ -641,7 +651,7 @@ export default function Website() {
             >
               GitHub ⭐
             </Button>
-          </Space>
+          </div>
         </div>
       </nav>
 
@@ -782,7 +792,7 @@ export default function Website() {
       </section>
 
       {/* Interactive Showcase */}
-      <section id="showcase" className="px-6 py-20 bg-card/40">
+      <section id="showcase" className="px-2 py-20 bg-card/40 sm:px-6">
         <div className="mx-auto max-w-7xl">
           <div className="text-center mb-12">
             <Tag color="purple" className="mb-3">
@@ -796,7 +806,10 @@ export default function Website() {
             </Typography.Text>
           </div>
 
-          <Card className="border-border shadow-card">
+          <Card
+            className="border-border shadow-card"
+            classNames={{ body: "p-3 sm:p-6" }}
+          >
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,4fr)]">
               <nav
                 aria-label="Examples"
@@ -805,7 +818,7 @@ export default function Website() {
                 <div className="mb-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">
                   Examples ({EXAMPLES.length})
                 </div>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-1">
+                <div className="grid grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-1">
                   {EXAMPLES.map(({ id, label }) => {
                     const isActive = id === activeExample.id;
                     return (
@@ -931,9 +944,9 @@ export default function Website() {
                     onLoad={loadPreview}
                     className="absolute inset-0 block border-0 bg-background"
                     style={{
-                      width: `calc(100% / ${PREVIEW_SCALE})`,
-                      height: `calc(100% / ${PREVIEW_SCALE})`,
-                      transform: `scale(${PREVIEW_SCALE})`,
+                      width: `calc(100% / ${previewScale})`,
+                      height: `calc(100% / ${previewScale})`,
+                      transform: `scale(${previewScale})`,
                       transformOrigin: "top left",
                     }}
                   />
